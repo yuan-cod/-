@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大数据期末通关刷题本 (全量版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        .btn-option { transition: all 0.2s; }
+        .btn-option:active { transform: scale(0.99); }
+        .correct-bg { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #14532d !important; }
+        .wrong-bg { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #7f1d1d !important; }
+        .selected-bg { background-color: #e0f2fe; border-color: #3b82f6; color: #1e40af; font-weight: 600; }
+        
+        /* 隐藏滚动条但保留功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-sm z-20 shrink-0">
+        <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+            <div>
+                <h1 class="text-lg font-bold text-slate-800">大数据全真题库</h1>
+                <p class="text-xs text-slate-500">覆盖 1-5 章 • 含主观题</p>
+            </div>
+            <div class="flex gap-2">
+                <div class="text-right">
+                    <span id="scoreText" class="text-xl font-bold text-blue-600">0</span>
+                    <span class="text-xs text-gray-400">分</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 章节筛选器 -->
+        <div class="flex overflow-x-auto gap-2 p-2 bg-slate-50 no-scrollbar">
+            <button onclick="setFilter('all')" class="filter-btn px-3 py-1 text-xs font-bold rounded-full bg-slate-800 text-white whitespace-nowrap shadow-sm">全卷 (All)</button>
+            <button onclick="setFilter('part1')" class="filter-btn px-3 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200 whitespace-nowrap hover:border-blue-400">第1/2章 (基础)</button>
+            <button onclick="setFilter('part2')" class="filter-btn px-3 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200 whitespace-nowrap hover:border-blue-400">第3章 (采集)</button>
+            <button onclick="setFilter('part3')" class="filter-btn px-3 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200 whitespace-nowrap hover:border-blue-400">第4/5章 (存算)</button>
+            <button onclick="setFilter('subjective')" class="filter-btn px-3 py-1 text-xs font-medium rounded-full bg-white text-slate-600 border border-slate-200 whitespace-nowrap hover:border-purple-400 text-purple-600">主观题 (背诵)</button>
+        </div>
+        
+        <!-- 进度条 -->
+        <div class="h-1 w-full bg-gray-200">
+            <div id="progressBar" class="h-1 bg-blue-600 transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100 relative" id="mainContainer">
+        
+        <!-- 欢迎页 -->
+        <div id="welcomeCard" class="max-w-xl mx-auto bg-white rounded-xl shadow-sm p-8 text-center mt-10">
+            <div class="text-5xl mb-4">📚</div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">准备好了吗？</h2>
+            <p class="text-slate-600 mb-6 text-sm">本题库包含约 25 道客观题和 2 道核心主观题。<br>请选择上方章节开始刷题。</p>
+            <button onclick="setFilter('all')" class="px-8 py-3 bg-blue-600 text-white rounded-lg font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 active:scale-95 transition">开始全卷模拟</button>
+        </div>
+
+        <!-- 题目卡片 (动态生成) -->
+        <div id="questionCard" class="hidden max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <!-- 题干 -->
+            <div class="p-6 border-b border-slate-50 bg-white">
+                <div class="flex justify-between items-start mb-3">
+                    <span id="qTag" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-600 tracking-wide">单选题</span>
+                    <span id="qIndex" class="text-xs text-slate-400 font-mono">1/30</span>
+                </div>
+                <h3 id="qText" class="text-lg font-bold text-slate-800 leading-relaxed">题目加载中...</h3>
+            </div>
+
+            <!-- 选项区域 -->
+            <div id="optionsArea" class="p-4 space-y-3 bg-slate-50 min-h-[200px]">
+                <!-- 选项由 JS 注入 -->
+            </div>
+
+            <!-- 解析区域 (默认隐藏) -->
+            <div id="feedbackArea" class="hidden p-5 bg-white border-t border-slate-100">
+                <div id="feedbackTitle" class="font-bold mb-1"></div>
+                <div id="feedbackContent" class="text-sm text-slate-600 leading-relaxed"></div>
+            </div>
+        </div>
+
+        <!-- 主观题卡片 (专用) -->
+        <div id="subjectiveCard" class="hidden max-w-2xl mx-auto space-y-4">
+            <!-- 动态注入主观题 -->
+        </div>
+
+    </main>
+
+    <!-- 底部控制栏 -->
+    <footer id="controlBar" class="hidden bg-white border-t p-3 shrink-0 z-20">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <button onclick="prevQ()" class="px-4 py-2 text-slate-500 text-sm font-medium hover:bg-slate-100 rounded-lg transition">上一题</button>
+            <button onclick="checkAnswer()" id="submitBtn" class="hidden px-8 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition">提交</button>
+            <button onclick="nextQ()" id="nextBtn" class="px-8 py-2 bg-slate-800 text-white font-bold rounded-lg shadow-md hover:bg-slate-700 transition">下一题</button>
+        </div>
+    </footer>
+
+    <script>
+        // === 全量题库数据 ===
+        const allQuestions = [
+            // --- 第1/2章 (基础) ---
+            {
+                id: 1, section: 'part1', type: 'single',
+                q: "1. 数据使用流程的第一步是（ ）",
+                options: ["A. 数据分析", "B. 数据管理", "C. 数据存储", "D. 数据清洗"],
+                correct: [3],
+                note: "数据闭环：数据清洗 → 数据管理 → 数据分析。"
+            },
+            {
+                id: 2, section: 'part1', type: 'single',
+                q: "2. 下列不属于支撑大数据时代的信息科技条件的是（ ）",
+                options: ["A. CPU计算能力增强", "B. 存储设备容量提升", "C. 纸质媒体技术升级", "D. 网络带宽扩大"],
+                correct: [2],
+                note: "大数据依赖计算、存储、网络，与纸质媒体无关。"
+            },
+            {
+                id: 3, section: 'part1', type: 'single',
+                q: "3. 第二次信息化浪潮主要解决的问题是（ ）",
+                options: ["A. 信息处理", "B. 信息爆炸", "C. 信息价值", "D. 信息传输"],
+                correct: [3],
+                note: "第一次(PC): 处理; 第二次(互联网): 传输; 第三次(IoT): 价值。"
+            },
+            {
+                id: 4, section: 'part1', type: 'single',
+                q: "4. 第三次信息化浪潮的核心标志是（ ）",
+                options: ["A. 个人计算机普及", "B. 5G技术商用", "C. 物联网、云计算和大数据的出现", "D. 互联网诞生"],
+                correct: [2]
+            },
+            {
+                id: 5, section: 'part1', type: 'single',
+                q: "5. 数据产生方式变革的第三阶段是（ ）",
+                options: ["A. 用户原创内容阶段", "B. 运营式系统阶段", "C. 人工记录阶段", "D. 感知式系统阶段"],
+                correct: [3],
+                note: "运营式(DB) → UGC(Web2.0) → 感知式(IoT)。"
+            },
+            {
+                id: 6, section: 'part1', type: 'single',
+                q: "6. 下列体现大数据“Value（价值密度低）”特征的案例是（ ）",
+                options: ["A. 某电商平台单日新增数据50TB", "B. 监控视频中仅1-2秒为有效信息", "C. 数据类型包含文本、图片等", "D. 实时推荐需秒级处理"],
+                correct: [1],
+                note: "A是Volume，C是Variety，D是Velocity。"
+            },
+            {
+                id: 7, section: 'part1', type: 'single',
+                q: "7. 企业采用云计算的优势不包括？（ ）",
+                options: ["A. 初期零成本", "B. 后期免维护", "C. 需自建IT基础设施", "D. 资源予取予求"],
+                correct: [2],
+                note: "云计算的核心是“免自建”。"
+            },
+            {
+                id: 8, section: 'part1', type: 'single',
+                q: "8. 传统IT资源获取方式的缺点不包括？（ ）",
+                options: ["A. 可按需动态扩展", "B. 初期建设成本高", "C. 后期需专人维护", "D. 资源供应有限"],
+                correct: [0],
+                note: "“可按需扩展”是云计算的优点，传统IT做不到，所以这不是传统IT的缺点，而是它根本不具备的特性。"
+            },
+
+            // --- 第3章 (采集与预处理) ---
+            {
+                id: 9, section: 'part2', type: 'single',
+                q: "9. 下列哪项不是大数据采集的特点？（ ）",
+                options: ["A. 数据源单一", "B. 数据量大", "C. 实时性强", "D. 结构复杂"],
+                correct: [0],
+                note: "大数据采集具有多源、异构的特点。"
+            },
+            {
+                id: 10, section: 'part2', type: 'single',
+                q: "10. 负责分布式日志收集的组件是？（ ）",
+                options: ["A. Kafka", "B. Flume", "C. Sqoop", "D. Storm"],
+                correct: [1],
+                note: "Flume: 日志收集; Kafka: 消息队列; Sqoop: 数据库传输。"
+            },
+            {
+                id: 11, section: 'part2', type: 'single',
+                q: "11. 数据清洗的主要任务不包括？（ ）",
+                options: ["A. 填补缺失值", "B. 去除重复数据", "C. 数据可视化", "D. 纠正错误数据"],
+                correct: [2],
+                note: "可视化是分析后的展示环节。"
+            },
+            {
+                id: 12, section: 'part2', type: 'single',
+                q: "12. 适合作为高吞吐量消息缓冲队列的组件是？（ ）",
+                options: ["A. Flume", "B. Kafka", "C. HDFS", "D. Spark"],
+                correct: [1],
+                note: "Kafka 常用于削峰填谷，作为消息总线。"
+            },
+
+            // --- 第4/5章 (存储与计算) ---
+            {
+                id: 13, section: 'part3', type: 'single',
+                q: "13. HDFS的主从结构中，负责管理文件系统命名空间的是？（ ）",
+                options: ["A. DataNode", "B. Client", "C. NameNode", "D. Rack"],
+                correct: [2]
+            },
+            {
+                id: 14, section: 'part3', type: 'single',
+                q: "14. Hadoop组件中，提供类似于SQL查询语言的工具是？（ ）",
+                options: ["A. Hive", "B. Mahout", "C. Zookeeper", "D. Flume"],
+                correct: [0],
+                note: "Hive 将 HQL 转化为 MapReduce。"
+            },
+            {
+                id: 15, section: 'part3', type: 'single',
+                q: "15. 支持Hadoop与关系型数据库数据交互的组件？（ ）",
+                options: ["A. Flume", "B. Pig", "C. Zookeeper", "D. Sqoop"],
+                correct: [3],
+                note: "Sqoop = SQL + Hadoop。"
+            },
+            {
+                id: 16, section: 'part3', type: 'single',
+                q: "16. 适合处理高度相互关联数据（如社交网络）的NoSQL是？（ ）",
+                options: ["A. 键值数据库", "B. 文档数据库", "C. 列族数据库", "D. 图数据库"],
+                correct: [3],
+                note: "图数据库 (Neo4j) 专攻关系网络。"
+            },
+            {
+                id: 17, section: 'part3', type: 'single',
+                q: "17. 云数据库的特性不包括？（ ）",
+                options: ["A. 动态可扩展", "B. 维护成本高", "C. 高可用性", "D. 易用性强"],
+                correct: [1],
+                note: "云数据库免维护，成本低。"
+            },
+            {
+                id: 18, section: 'part3', type: 'single',
+                q: "18. NoSQL中扩展性好、适合频繁读写简单模型的是？（ ）",
+                options: ["A. 图数据库", "B. 文档数据库", "C. 列族数据库", "D. 键值数据库"],
+                correct: [3],
+                note: "Redis (键值) 读写最快，模型最简单。"
+            },
+            {
+                id: 19, section: 'part3', type: 'multi',
+                q: "19. (多选) Hadoop的核心特性包括？（ ）",
+                options: ["A. 高可靠性", "B. 高可扩展性", "C. 高容错性", "D. 成本低"],
+                correct: [0, 1, 2, 3],
+                note: "全选。廉价机器(低成本)，多副本(可靠/容错)，易加节点(扩展)。"
+            },
+            {
+                id: 20, section: 'part3', type: 'multi',
+                q: "20. (多选) 关于HDFS说法正确的是？（ ）",
+                options: ["A. GFS是分布式文件系统", "B. HDFS采用主从结构", "C. NameNode向DataNode发心跳", "D. HDFS是GFS的开源实现"],
+                correct: [0, 1, 3],
+                note: "C错：是DataNode向NameNode发心跳汇报状态。"
+            },
+            {
+                id: 21, section: 'part3', type: 'multi',
+                q: "21. (多选) HDFS 读数据时的机制包括？（ ）",
+                options: ["A. 机架感知", "B. 就近读取", "C. 并行读取所有块", "D. 串行读取"],
+                correct: [0, 1, 4], // 注：D在很多教材中视为正确，因为Client按顺序读Block
+                note: "机架感知选择最近节点；通常按Block顺序串行读取。"
+            },
+            {
+                id: 22, section: 'part3', type: 'single',
+                q: "22. MapReduce 中连接 Map 和 Reduce 的核心阶段是？（ ）",
+                options: ["A. Split", "B. Sort", "C. Shuffle", "D. Combine"],
+                correct: [2],
+                note: "Shuffle (洗牌) 负责数据的排序、分组和传输。"
+            }
+        ];
+
+        const subjectiveQuestions = [
+            {
+                title: "1. 简述 HDFS 写数据流程",
+                key: "Pipeline, Packet, Ack",
+                content: `
+                <ol class="list-decimal pl-5 space-y-2 text-sm text-slate-700">
+                    <li><strong>请求</strong>：Client 向 NameNode 请求上传，NameNode 检查权限/目录。</li>
+                    <li><strong>切分</strong>：Client 将文件切分为 Block 和 Packet。</li>
+                    <li><strong>管道</strong>：Client 与 DataNode 列表建立 <span class="text-red-600 font-bold">Pipeline (管道)</span> (A->B->C)。</li>
+                    <li><strong>传输</strong>：数据流式写入。</li>
+                    <li><strong>确认</strong>：DataNode 反向发送 <span class="text-red-600 font-bold">Ack (确认包)</span> (C->B->A->Client)。</li>
+                    <li><strong>完成</strong>：Client 通知 NameNode 关流。</li>
+                </ol>`
+            },
+            {
+                title: "2. MapReduce 的工作流程",
+                key: "Split, Map, Shuffle, Reduce",
+                content: `
+                <ol class="list-decimal pl-5 space-y-2 text-sm text-slate-700">
+                    <li><strong>Split (切片)</strong>：将输入数据切分，分配给 Map 任务。</li>
+                    <li><strong>Map (映射)</strong>：并行处理，输出 &lt;Key, Value&gt;。</li>
+                    <li><strong>Shuffle (洗牌)</strong>：<span class="text-red-600 font-bold">核心阶段</span>。包括分区(Partition)、排序(Sort)、合并(Combine)、溢写、拉取。将相同 Key 传给同一个 Reduce。</li>
+                    <li><strong>Reduce (归约)</strong>：汇总计算，输出最终结果。</li>
+                </ol>`
+            }
+        ];
+
+        // === 逻辑控制 ===
+        let currentFilter = 'all';
+        let filteredQuestions = [];
+        let currentIndex = 0;
+        let userAnswers = {}; // { qId: [0, 2] }
+        let score = 0;
+
+        // 初始化
+        window.onload = () => {
+            // setFilter('all'); // 默认不自动开始，停在欢迎页
+        };
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            // UI 更新
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText.toLowerCase().includes(filter === 'all' ? 'all' : (filter === 'subjective' ? '主观' : (filter === 'part1' ? '1/2' : (filter === 'part2' ? '3' : '4/5'))))) {
+                    btn.classList.add('bg-slate-800', 'text-white', 'shadow-sm');
+                    btn.classList.remove('bg-white', 'text-slate-600', 'border');
+                } else {
+                    btn.classList.remove('bg-slate-800', 'text-white', 'shadow-sm');
+                    btn.classList.add('bg-white', 'text-slate-600', 'border');
+                }
+            });
+
+            // 隐藏欢迎页
+            document.getElementById('welcomeCard').classList.add('hidden');
+            
+            if (filter === 'subjective') {
+                renderSubjective();
+            } else {
+                // 筛选题目
+                filteredQuestions = allQuestions.filter(q => filter === 'all' || q.section === filter);
+                currentIndex = 0;
+                userAnswers = {};
+                score = 0;
+                document.getElementById('scoreText').innerText = 0;
+                
+                document.getElementById('questionCard').classList.remove('hidden');
+                document.getElementById('subjectiveCard').classList.add('hidden');
+                document.getElementById('controlBar').classList.remove('hidden');
+                
+                renderQuestion();
+            }
+        }
+
+        function renderQuestion() {
+            if (filteredQuestions.length === 0) {
+                alert("该章节暂无题目！");
+                return;
+            }
+
+            const q = filteredQuestions[currentIndex];
+            const isAnswered = userAnswers[q.id] !== undefined;
+
+            // 更新头部信息
+            document.getElementById('qTag').innerText = q.type === 'single' ? '单选题' : '多选题';
+            document.getElementById('qTag').className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${q.type === 'single' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'}`;
+            document.getElementById('qIndex').innerText = `${currentIndex + 1} / ${filteredQuestions.length}`;
+            document.getElementById('qText').innerText = q.q;
+
+            // 进度条
+            const progress = ((currentIndex + 1) / filteredQuestions.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+
+            // 渲染选项
+            const optsArea = document.getElementById('optionsArea');
+            optsArea.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-option w-full text-left p-4 rounded-lg bg-white border border-slate-200 text-sm font-medium hover:border-blue-300 relative";
+                btn.innerText = opt;
+                
+                // 状态回显
+                if (isAnswered) {
+                    btn.disabled = true;
+                    if (q.correct.includes(idx)) {
+                        btn.classList.add('correct-bg');
+                        btn.innerHTML += `<span class="absolute right-4 text-green-700 font-bold">✓</span>`;
+                    } else if (userAnswers[q.id].includes(idx)) {
+                        btn.classList.add('wrong-bg');
+                        btn.innerHTML += `<span class="absolute right-4 text-red-700 font-bold">×</span>`;
+                    }
+                } else {
+                    // 多选选中态
+                    if (userAnswers[q.id] && userAnswers[q.id].includes(idx)) {
+                        btn.classList.add('selected-bg');
+                    }
+                    btn.onclick = () => handleSelect(idx);
+                }
+                optsArea.appendChild(btn);
+            });
+
+            // 按钮逻辑
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (isAnswered) {
+                showFeedback(q);
+                submitBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                document.getElementById('feedbackArea').classList.add('hidden');
+                if (q.type === 'multi') {
+                    submitBtn.classList.remove('hidden');
+                    nextBtn.classList.add('hidden');
+                } else {
+                    submitBtn.classList.add('hidden');
+                    nextBtn.classList.add('hidden'); // 单选点选即走
+                }
+            }
+        }
+
+        function handleSelect(optIdx) {
+            const q = filteredQuestions[currentIndex];
+            
+            if (q.type === 'single') {
+                userAnswers[q.id] = [optIdx];
+                checkAnswer();
+            } else {
+                // 多选逻辑
+                if (!userAnswers[q.id]) userAnswers[q.id] = [];
+                const idx = userAnswers[q.id].indexOf(optIdx);
+                if (idx > -1) {
+                    userAnswers[q.id].splice(idx, 1);
+                } else {
+                    userAnswers[q.id].push(optIdx);
+                }
+                renderQuestion(); // 重绘选中态
+            }
+        }
+
+        function checkAnswer() {
+            const q = filteredQuestions[currentIndex];
+            const ans = userAnswers[q.id];
+            
+            if (!ans || ans.length === 0) {
+                alert("请选择答案！");
+                return;
+            }
+
+            // 判分 (简单的全对才得分)
+            const isCorrect = JSON.stringify(ans.sort()) === JSON.stringify(q.correct.sort());
+            if (isCorrect) {
+                score += (q.type === 'multi' ? 3 : 2); // 多选3分，单选2分
+                document.getElementById('scoreText').innerText = score;
+            }
+
+            // 强制刷新为已答状态
+            // userAnswers 已经在 handleSelect 中更新了，这里主要是触发 UI 锁定
+            renderQuestion();
+        }
+
+        function showFeedback(q) {
+            const fbArea = document.getElementById('feedbackArea');
+            const fbTitle = document.getElementById('feedbackTitle');
+            const fbContent = document.getElementById('feedbackContent');
+            
+            fbArea.classList.remove('hidden');
+            const userAns = userAnswers[q.id];
+            const isCorrect = JSON.stringify(userAns.sort()) === JSON.stringify(q.correct.sort());
+
+            fbTitle.innerHTML = isCorrect 
+                ? `<span class="text-green-600">🎉 回答正确</span>` 
+                : `<span class="text-red-600">😢 回答错误</span>`;
+            
+            fbContent.innerText = q.note ? `解析：${q.note}` : "解析：暂无详细解析，请参考课件。";
+        }
+
+        function nextQ() {
+            if (currentIndex < filteredQuestions.length - 1) {
+                currentIndex++;
+                renderQuestion();
+            } else {
+                alert("本章节题目已刷完！🎉");
+            }
+        }
+
+        function prevQ() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion();
+            }
+        }
+
+        function renderSubjective() {
+            document.getElementById('questionCard').classList.add('hidden');
+            document.getElementById('controlBar').classList.add('hidden');
+            const subArea = document.getElementById('subjectiveCard');
+            subArea.classList.remove('hidden');
+            subArea.innerHTML = '';
+
+            subjectiveQuestions.forEach(item => {
+                subArea.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                            <h3 class="font-bold text-slate-800">${item.title}</h3>
+                            <span class="text-slate-400">▼</span>
+                        </div>
+                        <div class="hidden p-6 bg-white">
+                            <div class="mb-3">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Keywords</span>
+                                <p class="text-blue-600 font-medium">${item.key}</p>
+                            </div>
+                            <div class="border-t border-slate-100 pt-3">
+                                ${item.content}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+    </script>
+</body>
+</html>
