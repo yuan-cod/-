@@ -3,516 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大数据期末选择题 </title>
+    <title>大数据全真刷题系统 (修复版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f1f5f9; color: #1e293b; }
-        .option-btn { transition: all 0.15s ease-in-out; }
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f8fafc; color: #1e293b; touch-action: manipulation; }
+        
+        /* 基础按钮样式 */
+        .option-btn { 
+            border: 2px solid #e2e8f0; /* 默认灰色边框 */
+            transition: all 0.15s ease; 
+            background-color: white;
+        }
+        .option-btn:hover { border-color: #cbd5e1; }
         .option-btn:active { transform: scale(0.99); }
         
-        /* 状态颜色 */
-        .correct-bg { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #14532d !important; }
-        .wrong-bg { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #7f1d1d !important; }
-        .selected-bg { background-color: #e0f2fe; border-color: #3b82f6; color: #1e40af; font-weight: 600; }
+        /* 选中状态 (未提交时) - 鲜艳的蓝色 */
+        .selected { 
+            background-color: #eff6ff !important; 
+            border-color: #3b82f6 !important; /* 蓝色边框 */
+            color: #1d4ed8 !important; 
+            font-weight: 600;
+        }
         
+        /* 正确状态 (提交后) - 鲜艳的绿色 */
+        .correct { 
+            background-color: #f0fdf4 !important; 
+            border-color: #22c55e !important; /* 绿色边框 */
+            color: #15803d !important; 
+        }
+        
+        /* 错误状态 (提交后) - 鲜艳的红色 */
+        .wrong { 
+            background-color: #fef2f2 !important; 
+            border-color: #ef4444 !important; /* 红色边框 */
+            color: #b91c1c !important; 
+        }
+
+        /* 题号网格样式 */
+        .grid-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 14px; font-weight: bold; transition: all 0.2s; border: 1px solid #e2e8f0; background: white;}
+        .grid-correct { background: #dcfce7; color: #15803d; border-color: #86efac; }
+        .grid-wrong { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+        .grid-current { ring: 2px solid #3b82f6; ring-offset: 1px; border-color: #3b82f6; }
+
         /* 隐藏滚动条 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* 标记 */
-        .badge-multi { background-color: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
-        .badge-single { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
     </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden text-sm md:text-base">
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <!-- Header -->
+    <!-- 顶部 -->
     <header class="bg-white shadow-sm z-20 shrink-0 border-b border-slate-200">
         <div class="px-4 py-3 flex justify-between items-center">
             <div>
-                <h1 class="text-lg font-bold text-slate-800">大数据题库</h1>
-                <p class="text-xs text-slate-500">含 1-5 章</p>
+                <h1 class="text-lg font-bold text-slate-800">大数据通关题库</h1>
+                <p class="text-xs text-slate-500">自动保存进度 • 题号跳转</p>
             </div>
-            <div class="text-right">
-                <span id="scoreText" class="text-xl font-bold text-blue-600">0</span>
-                <span class="text-xs text-slate-400">分</span>
+            <div class="flex gap-3 items-center">
+                <div class="text-right">
+                    <span id="scoreText" class="text-xl font-bold text-blue-600">0</span>
+                    <span class="text-xs text-slate-400">分</span>
+                </div>
+                <button onclick="resetProgress()" class="text-xs text-red-400 hover:text-red-600 underline">重置</button>
+                <a href="index.html" class="text-xs text-slate-400 hover:text-slate-600">退出</a>
             </div>
         </div>
         
-        <!-- Tabs -->
+        <!-- 章节 Tab -->
         <div class="flex overflow-x-auto gap-2 p-2 bg-slate-50 border-b border-slate-200 no-scrollbar">
-            <button onclick="setSection('part1')" class="tab-btn active px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 text-white shadow-md whitespace-nowrap">第1/2章 (18题)</button>
-            <button onclick="setSection('part2')" class="tab-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:border-blue-400 whitespace-nowrap">第3章 (14题)</button>
-            <button onclick="setSection('part3')" class="tab-btn px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:border-blue-400 whitespace-nowrap">第4/5章 (20题)</button>
-            <button onclick="setSection('subjective')" class="tab-btn px-3 py-1.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:border-purple-400 whitespace-nowrap">主观题 (背诵)</button>
+            <button onclick="switchSection('part1')" class="tab-btn px-3 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap" id="tab-part1">第1/2章</button>
+            <button onclick="switchSection('part2')" class="tab-btn px-3 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap" id="tab-part2">第3章</button>
+            <button onclick="switchSection('part3')" class="tab-btn px-3 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap" id="tab-part3">第4/5章</button>
+            <button onclick="switchSection('subjective')" class="tab-btn px-3 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap" id="tab-subjective">主观题</button>
         </div>
         
-        <!-- Progress -->
-        <div class="h-1 w-full bg-slate-200">
-            <div id="progressBar" class="h-1 bg-blue-600 transition-all duration-300" style="width: 0%"></div>
+        <!-- 进度条 -->
+        <div class="h-1.5 w-full bg-slate-200">
+            <div id="progressBar" class="h-1.5 bg-blue-600 transition-all duration-300" style="width: 0%"></div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto p-4 bg-slate-100 relative" id="mainContainer">
+    <!-- 主区域 -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100 relative" id="mainContainer">
         
-        <!-- Objective Question Card -->
-        <div id="quizCard" class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[60vh]">
-            <div class="p-5 border-b border-slate-50">
+        <!-- 客观题卡片 -->
+        <div id="quizCard" class="max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[50vh]">
+            <!-- 题干 -->
+            <div class="p-6 border-b border-slate-50 bg-white sticky top-0 z-10">
                 <div class="flex justify-between items-start mb-3">
-                    <span id="qTypeBadge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase badge-single">单选题</span>
+                    <span id="qTypeBadge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-600 tracking-wide">单选题</span>
                     <span id="qIndex" class="text-xs text-slate-400 font-mono">1/--</span>
                 </div>
-                <h3 id="qText" class="text-base md:text-lg font-bold text-slate-800 leading-relaxed"></h3>
+                <h3 id="qText" class="text-base md:text-lg font-bold text-slate-800 leading-relaxed text-justify"></h3>
             </div>
 
-            <div id="optionsArea" class="p-5 space-y-3 bg-slate-50/50">
-                <!-- Options injected here -->
-            </div>
+            <!-- 选项 -->
+            <div id="optionsArea" class="p-6 space-y-3 bg-slate-50/50"></div>
 
-            <div id="feedbackArea" class="hidden p-5 bg-blue-50 border-t border-blue-100">
-                <div id="feedbackTitle" class="font-bold mb-1 text-blue-800 text-sm"></div>
-                <div id="feedbackContent" class="text-sm text-slate-600 leading-relaxed"></div>
+            <!-- 解析 -->
+            <div id="feedbackArea" class="hidden p-6 bg-blue-50 border-t border-blue-100">
+                <div id="feedbackTitle" class="font-bold mb-2 text-sm"></div>
+                <div id="feedbackContent" class="text-sm text-slate-700 leading-relaxed"></div>
             </div>
         </div>
 
-        <!-- Subjective Question Card -->
-        <div id="subjectiveCard" class="hidden max-w-2xl mx-auto space-y-4 pb-10">
-            <!-- Subjective items injected here -->
-        </div>
+        <!-- 主观题列表 -->
+        <div id="subjectiveCard" class="hidden max-w-2xl mx-auto space-y-4 pb-20"></div>
 
     </main>
 
-    <!-- Footer -->
-    <footer id="footerControl" class="bg-white border-t p-3 shrink-0 z-20">
-        <div class="max-w-2xl mx-auto flex justify-between items-center gap-3">
-            <button onclick="prevQ()" id="prevBtn" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg text-sm disabled:opacity-30">上一题</button>
-            <button onclick="checkAnswer()" id="submitBtn" class="hidden flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 active:scale-95 text-sm">提交答案</button>
-            <button onclick="nextQ()" id="nextBtn" class="hidden flex-1 px-4 py-2 bg-slate-800 text-white font-bold rounded-lg shadow-md hover:bg-slate-700 active:scale-95 text-sm">下一题</button>
+    <!-- 底部导航栏 -->
+    <footer id="footerControl" class="bg-white border-t p-3 shrink-0 z-20 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div class="max-w-2xl mx-auto flex gap-3 items-center justify-between">
+            
+            <button onclick="prevQ()" class="p-3 text-slate-500 hover:bg-slate-100 rounded-lg transition active:bg-slate-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+
+            <!-- 题号网格开关 -->
+            <button onclick="toggleGrid()" class="flex-1 py-3 bg-slate-50 text-slate-600 font-bold rounded-lg border border-slate-200 hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                <span id="gridBtnText">1 / 20</span>
+            </button>
+
+            <!-- 提交按钮 (多选) -->
+            <button onclick="submitMulti()" id="multiSubmitBtn" class="hidden flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition">
+                提交答案
+            </button>
+
+            <button onclick="nextQ()" class="p-3 bg-slate-800 text-white hover:bg-slate-700 rounded-lg transition shadow-md active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
         </div>
     </footer>
 
-    <script>
-        // === Data Source ===
-        // section: part1, part2, part3
-        // type: single, multi
-        const questions = [
-            // --- 第1/2章 ---
-            // 单选
-            {
-                id: 101, section: 'part1', type: 'single',
-                q: "1. 数据使用流程的第一步是（）",
-                options: ["A. 数据分析", "B. 数据管理", "C. 数据存储", "D. 数据清洗"],
-                correct: [3], // D (Based on courseware logic, usually Clean -> Manage -> Analyze. User text said B but likely typo or specific context. Sticking to D for correctness based on Doc 1)
-                note: "根据课件整理：数据使用流程闭环为：数据清洗 -> 数据管理 -> 数据分析。"
-            },
-            {
-                id: 102, section: 'part1', type: 'single',
-                q: "2. 下列不属于支撑大数据时代的信息科技条件的是（）",
-                options: ["A. CPU计算能力增强", "B. 存储设备容量提升", "C. 纸质媒体技术升级", "D. 网络带宽扩大"],
-                correct: [2]
-            },
-            {
-                id: 103, section: 'part1', type: 'single',
-                q: "3. 第二次信息化浪潮主要解决的问题是（）",
-                options: ["A. 信息处理", "B. 信息爆炸", "C. 信息价值", "D. 信息传输"],
-                correct: [3]
-            },
-            {
-                id: 104, section: 'part1', type: 'single',
-                q: "4. 第三次信息化浪潮的核心标志是（）",
-                options: ["A. 个人计算机普及", "B. 5G技术商用", "C. 物联网、云计算和大数据的出现", "D. 互联网诞生"],
-                correct: [2]
-            },
-            {
-                id: 105, section: 'part1', type: 'single',
-                q: "5. 数据产生方式变革的第三阶段是（）",
-                options: ["A. 用户原创内容阶段", "B. 运营式系统阶段", "C. 人工记录阶段", "D. 感知式系统阶段"],
-                correct: [3]
-            },
-            {
-                id: 106, section: 'part1', type: 'single',
-                q: "6. 下列体现大数据“Value（价值密度低）”特征的案例是（）",
-                options: ["A. 某电商平台单日新增数据50TB", "B. 监控视频中仅1-2秒为有效信息", "C. 数据包含文本、图片、音频等多种类型", "D. 实时推荐系统需秒级处理用户行为数"],
-                correct: [1]
-            },
-            {
-                id: 107, section: 'part1', type: 'single',
-                q: "7. 企业采用云计算租用云端资源的优势不包括？（）",
-                options: ["A. 初期零成本，瞬时获取资源", "B. 后期免维护，使用成本低", "C. 需自建IT基础设施", "D. 资源供应“予取予求”"],
-                correct: [2],
-                note: "云计算的核心优势是免自建、免维护。"
-            },
-            {
-                id: 108, section: 'part1', type: 'single',
-                q: "8. 传统IT资源获取方式（如企业自建机房）的缺点不包括？（）",
-                options: ["A. 可按需动态扩展", "B. 初期建设成本高", "C. 后期需专人维护", "D. IT资源供应量有限"],
-                correct: [0],
-                note: "“可按需动态扩展”是云计算的优点，传统IT不具备此功能，所以它不是传统IT的缺点（而是缺失的特性）。"
-            },
-            {
-                id: 109, section: 'part1', type: 'single',
-                q: "9. 云计算中“动态扩展性”的含义是？（）",
-                options: ["A. 资源供应固定，无法调整", "B. 仅能扩展存储资源，不能扩展计算资源", "C. 可根据用户需求灵活增加或减少资源", "D. 需提前1天申请资源扩展"],
-                correct: [2]
-            },
-            {
-                id: 110, section: 'part1', type: 'single',
-                q: "10. 云计算应用层（IaaS）指的是（）",
-                options: ["A. 操作系统和围绕特定应用的必需的服务", "B. 将基础设施(计算资源和存储)作为服务出租", "C. 部署软件在本地运行", "D. 提供咨询规划服务"],
-                correct: [1],
-                note: "IaaS = Infrastructure as a Service (基础设施即服务)。"
-            },
-            {
-                id: 111, section: 'part1', type: 'single',
-                q: "11. 随着大数据概念的普及，云计算的核心定位更偏向于？（）",
-                options: ["A. 仅提供分布式计算技术", "B. 底层IT资源的整合优化及服务模式", "C. 替代大数据技术", "D. 仅用于个人用户的软件服务"],
-                correct: [1]
-            },
-            // 多选 (12-18)
-            {
-                id: 112, section: 'part1', type: 'multi',
-                q: "12. 按照数据表现形式，数据可以分为以下哪几种类型？（）",
-                options: ["A. 图片", "B. 音频", "C. 视频", "D. 文本"],
-                correct: [0, 1, 2, 3]
-            },
-            {
-                id: 113, section: 'part1', type: 'multi',
-                q: "13. 按数据组织方式分类，数据类型包括（）",
-                options: ["A. 半结构化数据", "B. 文本数据", "C. 结构化数据", "D. 非结构化数据"],
-                correct: [0, 2, 3],
-                note: "文本数据属于非结构化的一种，组织方式通常分为：结构化、半结构化、非结构化。"
-            },
-            {
-                id: 114, section: 'part1', type: 'multi',
-                q: "14. 下面关于数据的说法，正确的是（）",
-                options: ["A. 数据的价值会因为不断使用而削减", "B. 数据的价值核心在于可以为人们找出答案", "C. 数据价值会被不断挖掘和发现", "D. 数据的产生不以人的意志为转移"],
-                correct: [1, 2], // BC based on user text (Note: user said BC)
-                note: "A错误，数据价值不会因使用削减；D通常不作为核心特征讨论。"
-            },
-            {
-                id: 115, section: 'part1', type: 'multi',
-                q: "15. 数据使用过程中，数据管理阶段涉及的最重要的两种数据库类型分别是（）",
-                options: ["A. 关系型数据库", "B. 层次数据库", "C. NoSQL数据库", "D. 网状数据库"],
-                correct: [0, 2],
-                note: "SQL (关系型) 和 NoSQL 是当代数据管理的两大支柱。"
-            },
-            {
-                id: 116, section: 'part1', type: 'multi',
-                q: "16. 数据产生方式变革三阶段的特点包括（）",
-                options: ["A. 运营式系统阶段：数据伴随运营活动被动产生", "B. 感知式系统阶段：物联网设备自动产生海量数据", "C. 用户原创内容阶段：Web2.0推动用户主动产生数据", "D. 人工记录阶段：依赖纸质记录，数据量极小"],
-                correct: [0, 1, 2, 3]
-            },
-            {
-                id: 117, section: 'part1', type: 'multi',
-                q: "17. 大数据“4V”特征包括（）",
-                options: ["A. 数据量大 (Volume)", "B. 处理速度快 (Velocity)", "C. 数据类型繁多 (Variety)", "D. 价值密度低 (Value)"],
-                correct: [0, 1, 2, 3]
-            },
-            {
-                id: 118, section: 'part1', type: 'multi',
-                q: "18. 云计算的服务模式主要包括以下哪些类型？（）",
-                options: ["A. SaaS", "B. PaaS", "C. DaaS", "D. IaaS"],
-                correct: [0, 1, 3],
-                note: "IaaS, PaaS, SaaS 是云计算的三种标准服务模式。"
-            },
+    <!-- 题号网格弹窗 -->
+    <div id="gridModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end md:items-center justify-center p-4 backdrop-blur-sm" onclick="toggleGrid()">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-800">题目导航</h3>
+                <button onclick="toggleGrid()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+            </div>
+            <div class="p-4 overflow-y-auto grid grid-cols-5 gap-3" id="gridContent">
+                <!-- Grid items generated by JS -->
+            </div>
+            <div class="p-3 bg-slate-50 text-xs text-center text-slate-400 border-t border-slate-100">
+                绿色: 正确 • 红色: 错误 • 白色: 未做
+            </div>
+        </div>
+    </div>
 
-            // --- 第3章 (采集) ---
-            {
-                id: 201, section: 'part2', type: 'single',
-                q: "1. 以下哪个步骤不属于数据的采集与预处理？（）",
-                options: ["A. 利用ETL工具抽取、清洗数据", "B. 利用日志采集工具采集数据", "C. 利用网页爬虫爬取数据", "D. 利用分布式计算框架实现海量数据分析"],
-                correct: [3],
-                note: "D属于“分析”阶段，不属于“采集与预处理”。"
-            },
-            {
-                id: 202, section: 'part2', type: 'single',
-                q: "2. 传统数据采集与大数据采集的区别不包括下列哪个维度？（）",
-                options: ["A. 数据源范围", "B. 数据类型多样性", "C. 数据存储位置", "D. 数据分析算法"],
-                correct: [3],
-                note: "分析算法是后续步骤。"
-            },
-            {
-                id: 203, section: 'part2', type: 'single',
-                q: "3. 下列哪项不属于数据采集的数据源？（）",
-                options: ["A. 互联网数据", "B. 日志文件", "C. 企业业务系统数据", "D. 数据仓库数据"],
-                correct: [3],
-                note: "数据仓库是目的地，不是源头。"
-            },
-            {
-                id: 204, section: 'part2', type: 'single',
-                q: "4. 某直播平台需实时处理高并发的弹幕数据，最合适的采集方法是（）",
-                options: ["A. 系统日志采集", "B. ETL", "C. 分布式消息订阅分发", "D. 网络数据采集"],
-                correct: [2],
-                note: "Kafka (消息订阅分发) 适合高并发实时数据流。"
-            },
-            {
-                id: 205, section: 'part2', type: 'single',
-                q: "5. 以下哪项不属于数据清洗的内容？（）",
-                options: ["A. 一致性检查", "B. 精确度校验", "C. 缺失值处理", "D. 重复值处理"],
-                correct: [1]
-            },
-            {
-                id: 206, section: 'part2', type: 'single',
-                q: "6. 下列哪项不属于数据转换的核心策略？（）",
-                options: ["A. 规范化处理", "B. 属性构造", "C. 数据脱敏", "D. 聚集处理"],
-                correct: [2],
-                note: "数据脱敏属于“安全与隐私保护”，不属于为了挖掘而进行的“数据转换”。"
-            },
-            {
-                id: 207, section: 'part2', type: 'single',
-                q: "7. 下列属于错误数据的是（）",
-                options: ["A. 地址填写不完整", "B. 订单重复", "C. 用户年龄填写为150岁", "D. 成绩为空"],
-                correct: [2],
-                note: "A不完整，B重复，D缺失。C是逻辑错误(异常值)。"
-            },
-            {
-                id: 208, section: 'part2', type: 'single',
-                q: "8. Z-Score规范化比较：A(均70,差10,考90) vs B(均150,差100,考280)，谁更优秀？（）",
-                options: ["A. A更优秀", "B. B更优秀", "C. 一样优秀", "D. 无法比较"],
-                correct: [0],
-                note: "A: (90-70)/10 = 2.0; B: (280-150)/100 = 1.3。2.0 > 1.3。"
-            },
-            {
-                id: 209, section: 'part2', type: 'single',
-                q: "9. Min-Max规范化：[1万, 8万]映射到0-1，收入6.5万对应多少？（）",
-                options: ["A. 0.708", "B. 0.687", "C. 0.786", "D. 0.928"],
-                correct: [2],
-                note: "(65000-10000)/(80000-10000) = 55/70 ≈ 0.7857"
-            },
-            {
-                id: 210, section: 'part2', type: 'single',
-                q: "10. 将“13800138000”处理为“138****8000”，属于哪种脱敏？（）",
-                options: ["A. 数据替换", "B. 掩码屏蔽", "C. 无效化", "D. 灵活编码"],
-                correct: [1]
-            },
-            {
-                id: 211, section: 'part2', type: 'single',
-                q: "11. 将真实月收入8500元改为8200元（处于7000-9000区间），属于哪种脱敏？（）",
-                options: ["A. 随机化", "B. 偏移和取整", "C. 数据替换", "D. 掩码屏蔽"],
-                correct: [0]
-            },
-            // 多选
-            {
-                id: 212, section: 'part2', type: 'multi',
-                q: "12. 大数据技术分为不同的层次，主要包括（）",
-                options: ["A. 大数据采集", "B. 数据存储和管理", "C. 数据处理与分析", "D. 数据安全与隐私保护"],
-                correct: [0, 1, 2, 3]
-            },
-            {
-                id: 213, section: 'part2', type: 'multi',
-                q: "13. 需要清洗的数据的主要类型包括（）",
-                options: ["A. 残缺数据", "B. 干净数据", "C. 错误数据", "D. 重复数据"],
-                correct: [0, 2, 3]
-            },
-            {
-                id: 214, section: 'part2', type: 'multi',
-                q: "14. 数据转换中属性构造的案例包括下列（）",
-                options: ["A. 构造“优惠依赖度”", "B. 构造“平均分”", "C. 构造“月度销量”", "D. 构造“年龄区间”"],
-                correct: [0, 1, 2, 3]
-            },
+    <script>
+        // === 题库数据 (完整54题) ===
+        const allQuestions = [
+            // --- 第1/2章 ---
+            { id: 101, section: 'part1', type: 'single', q: "1. 数据使用流程的第一步是（）", options: ["A. 数据分析", "B. 数据管理", "C. 数据存储", "D. 数据清洗"], correct: [3], note: "数据闭环：清洗 -> 管理 -> 分析。" },
+            { id: 102, section: 'part1', type: 'single', q: "2. 下列不属于支撑大数据时代的信息科技条件的是（）", options: ["A. CPU计算能力增强", "B. 存储设备容量提升", "C. 纸质媒体技术升级", "D. 网络带宽扩大"], correct: [2] },
+            { id: 103, section: 'part1', type: 'single', q: "3. 第二次信息化浪潮主要解决的问题是（）", options: ["A. 信息处理", "B. 信息爆炸", "C. 信息价值", "D. 信息传输"], correct: [3] },
+            { id: 104, section: 'part1', type: 'single', q: "4. 第三次信息化浪潮的核心标志是（）", options: ["A. 个人计算机普及", "B. 5G技术商用", "C. 物联网、云计算和大数据的出现", "D. 互联网诞生"], correct: [2] },
+            { id: 105, section: 'part1', type: 'single', q: "5. 数据产生方式变革的第三阶段是（）", options: ["A. 用户原创内容阶段", "B. 运营式系统阶段", "C. 人工记录阶段", "D. 感知式系统阶段"], correct: [3] },
+            { id: 106, section: 'part1', type: 'single', q: "6. 下列体现大数据“Value（价值密度低）”特征的案例是（）", options: ["A. 某电商平台单日新增数据50TB", "B. 监控视频中仅1-2秒为有效信息", "C. 数据包含文本、图片、音频等多种类型", "D. 实时推荐系统需秒级处理用户行为数"], correct: [1] },
+            { id: 107, section: 'part1', type: 'single', q: "7. 企业采用云计算租用云端资源的优势不包括？（）", options: ["A. 初期零成本，瞬时获取资源", "B. 后期免维护，使用成本低", "C. 需自建IT基础设施", "D. 资源供应“予取予求”"], correct: [2] },
+            { id: 108, section: 'part1', type: 'single', q: "8. 传统IT资源获取方式（如企业自建机房）的缺点不包括？（）", options: ["A. 可按需动态扩展", "B. 初期建设成本高", "C. 后期需专人维护", "D. IT资源供应量有限"], correct: [0] },
+            { id: 109, section: 'part1', type: 'single', q: "9. 云计算中“动态扩展性”的含义是？（）", options: ["A. 资源供应固定，无法调整", "B. 仅能扩展存储资源，不能扩展计算资源", "C. 可根据用户需求灵活增加或减少资源", "D. 需提前1天申请资源扩展"], correct: [2] },
+            { id: 110, section: 'part1', type: 'single', q: "10. 云计算应用层（IaaS）指的是（）", options: ["A. 操作系统和围绕特定应用的必需的服务", "B. 将基础设施(计算资源和存储)作为服务出租", "C. 从一个集中的系统部署软件", "D. 提供硬件、软件、网络等基础设施"], correct: [1] },
+            { id: 111, section: 'part1', type: 'single', q: "11. 随着大数据概念的普及，云计算的核心定位更偏向于？（）", options: ["A. 仅提供分布式计算技术", "B. 底层IT资源的整合优化及服务模式", "C. 替代大数据技术", "D. 仅用于个人用户的软件服务"], correct: [1] },
+            { id: 112, section: 'part1', type: 'multi', q: "12. 按照数据表现形式，数据可以分为以下哪几种类型？（）", options: ["A. 图片", "B. 音频", "C. 视频", "D. 文本"], correct: [0, 1, 2, 3] },
+            { id: 113, section: 'part1', type: 'multi', q: "13. 按数据组织方式分类，数据类型包括（）", options: ["A. 半结构化数据", "B. 文本数据", "C. 结构化数据", "D. 非结构化数据"], correct: [0, 2, 3] },
+            { id: 114, section: 'part1', type: 'multi', q: "14. 下面关于数据的说法，正确的是（）", options: ["A. 数据的价值会因为不断使用而削减", "B. 数据的价值核心在于可以为人们找出答案", "C. 数据价值会被不断挖掘和发现", "D. 数据的产生不以人的意志为转移"], correct: [1, 2] },
+            { id: 115, section: 'part1', type: 'multi', q: "15. 数据使用过程中，数据管理阶段涉及的最重要的两种数据库类型分别是（）", options: ["A. 关系型数据库", "B. 层次数据库", "C. NoSQL数据库", "D. 网状数据库"], correct: [0, 2] },
+            { id: 116, section: 'part1', type: 'multi', q: "16. 数据产生方式变革三阶段的特点包括（）", options: ["A. 运营式系统阶段：数据伴随运营活动被动产生", "B. 感知式系统阶段：物联网设备自动产生海量数据", "C. 用户原创内容阶段：Web2.0推动用户主动产生数据", "D. 人工记录阶段：依赖纸质记录，数据量极小"], correct: [0, 1, 2, 3] },
+            { id: 117, section: 'part1', type: 'multi', q: "17. 大数据“4V”特征包括（）", options: ["A. 数据量大", "B. 处理速度快", "C. 数据类型繁多", "D. 价值密度低"], correct: [0, 1, 2, 3] },
+            { id: 118, section: 'part1', type: 'multi', q: "18. 云计算的服务模式主要包括以下哪些类型？（）", options: ["A. SaaS", "B. PaaS", "C. DaaS", "D. IaaS"], correct: [0, 1, 3] },
+
+            // --- 第3章 ---
+            { id: 201, section: 'part2', type: 'single', q: "1. 以下哪个步骤不属于数据的采集与预处理？（）", options: ["A. 利用ETL工具抽取、清洗数据", "B. 利用日志采集工具采集数据", "C. 利用网页爬虫爬取数据", "D. 利用分布式计算框架实现海量数据分析"], correct: [3] },
+            { id: 202, section: 'part2', type: 'single', q: "2. 传统数据采集与大数据采集的区别不包括下列哪个维度？（）", options: ["A. 数据源范围", "B. 数据类型多样性", "C. 数据存储位置", "D. 数据分析算法"], correct: [3] },
+            { id: 203, section: 'part2', type: 'single', q: "3. 下列哪项不属于数据采集的数据源？（）", options: ["A. 互联网数据", "B. 日志文件", "C. 企业业务系统数据", "D. 数据仓库数据"], correct: [3] },
+            { id: 204, section: 'part2', type: 'single', q: "4. 某直播平台需实时处理高并发的弹幕数据，最合适的采集方法是（）", options: ["A. 系统日志采集", "B. ETL", "C. 分布式消息订阅分发", "D. 网络数据采集"], correct: [2] },
+            { id: 205, section: 'part2', type: 'single', q: "5. 以下哪项不属于数据清洗的内容？（）", options: ["A. 一致性检查", "B. 精确度校验", "C. 缺失值处理", "D. 重复值处理"], correct: [1] },
+            { id: 206, section: 'part2', type: 'single', q: "6. 下列哪项不属于数据转换的核心策略？（）", options: ["A. 规范化处理", "B. 属性构造", "C. 数据脱敏", "D. 聚集处理"], correct: [2] },
+            { id: 207, section: 'part2', type: 'single', q: "7. 下列属于错误数据的是（）", options: ["A. 地址填写不完整", "B. 订单重复", "C. 用户年龄填写为150岁", "D. 成绩为空"], correct: [2] },
+            { id: 208, section: 'part2', type: 'single', q: "8. Z-Score规范化：A(均70,差10,考90) vs B(均150,差100,考280)，谁更优秀？（）", options: ["A. A更优秀", "B. B更优秀", "C. 一样优秀", "D. 无法比较"], correct: [0] },
+            { id: 209, section: 'part2', type: 'single', q: "9. Min-Max规范化：[1万, 8万]映射到0-1，收入6.5万对应多少？（）", options: ["A. 0.708", "B. 0.687", "C. 0.786", "D. 0.928"], correct: [2] },
+            { id: 210, section: 'part2', type: 'single', q: "10. 将“13800138000”处理为“138****8000”，属于哪种脱敏？（）", options: ["A. 数据替换", "B. 掩码屏蔽", "C. 无效化", "D. 灵活编码"], correct: [1] },
+            { id: 211, section: 'part2', type: 'single', q: "11. 将真实月收入8500元改为8200元（处于7000-9000区间），属于哪种脱敏？（）", options: ["A. 随机化", "B. 偏移和取整", "C. 数据替换", "D. 掩码屏蔽"], correct: [0] },
+            { id: 212, section: 'part2', type: 'multi', q: "12. 大数据技术分为不同的层次，主要包括（）", options: ["A. 大数据采集", "B. 数据存储和管理", "C. 数据处理与分析", "D. 数据安全与隐私保护"], correct: [0, 1, 2, 3] },
+            { id: 213, section: 'part2', type: 'multi', q: "13. 需要清洗的数据的主要类型包括（）", options: ["A. 残缺数据", "B. 干净数据", "C. 错误数据", "D. 重复数据"], correct: [0, 2, 3] },
+            { id: 214, section: 'part2', type: 'multi', q: "14. 数据转换中属性构造的案例包括下列（）", options: ["A. 构造“优惠依赖度”", "B. 构造“平均分”", "C. 构造“月度销量”", "D. 构造“年龄区间”"], correct: [0, 1, 2, 3] },
 
             // --- 第4/5章 ---
-            // 单选 1-7
-            {
-                id: 301, section: 'part3', type: 'single',
-                q: "1. NoSQL数据库的主要优势不包括（）",
-                options: ["A. 灵活的水平可扩展性", "B. 严格遵守ACID约束", "C. 支持海量数据存储", "D. 灵活的数据模型"],
-                correct: [1],
-                note: "NoSQL 遵循 BASE 理论，不严格遵守 ACID。"
-            },
-            {
-                id: 302, section: 'part3', type: 'single',
-                q: "2. HDFS的主从结构中，负责管理文件系统命名空间的是？（）",
-                options: ["A. DataNode", "B. Client", "C. NameNode", "D. Rack"],
-                correct: [2]
-            },
-            {
-                id: 303, section: 'part3', type: 'single',
-                q: "3. Hadoop组件中，提供类似于SQL查询语言的工具是（）",
-                options: ["A. Hive", "B. Mahout", "C. Zookeeper", "D. Flume"],
-                correct: [0]
-            },
-            {
-                id: 304, section: 'part3', type: 'single',
-                q: "4. 下面哪个组件支持Hadoop与关系型数据库之间的数据交互？（）",
-                options: ["A. Flume", "B. Pig", "C. Zookeeper", "D. Sqoop"],
-                correct: [3]
-            },
-            {
-                id: 305, section: 'part3', type: 'single',
-                q: "5. NoSQL数据库中，适合处理高度相互关联数据的是（）",
-                options: ["A. 键值数据库", "B. 文档数据库", "C. 列族数据库", "D. 图数据库"],
-                correct: [3]
-            },
-            {
-                id: 306, section: 'part3', type: 'single',
-                q: "6. 云数据库的特性不包括（）",
-                options: ["A. 动态可扩展", "B. 维护成本高", "C. 高可用性", "D. 易用性强"],
-                correct: [1]
-            },
-            {
-                id: 307, section: 'part3', type: 'single',
-                q: "7. NoSQL数据库中，扩展性好、适合频繁读写简单数据模型的是（）",
-                options: ["A. 图数据库", "B. 文档数据库", "C. 列族数据库", "D. 键值数据库"],
-                correct: [3],
-                note: "键值数据库 (如Redis) 结构最简单，速度最快。"
-            },
-            // 多选 8-10
-            {
-                id: 308, section: 'part3', type: 'multi',
-                q: "8. (多选) Hadoop的核心特性包括（）",
-                options: ["A. 高可靠性", "B. 高可扩展性", "C. 高容错性", "D. 成本低"],
-                correct: [0, 1, 2, 3]
-            },
-            {
-                id: 309, section: 'part3', type: 'multi',
-                q: "9. (多选) 下列说法中正确的是（）",
-                options: ["A. GFS是分布式文件系统", "B. HDFS采用主从结构", "C. NameNode向DataNode发心跳", "D. HDFS是对GFS的开源实现"],
-                correct: [0, 3], // AD in user text? Wait.
-                // Text says: A(True), B(True in text?), C(False), D(True).
-                // User text Answer: (AD). Wait, B is definitely true (Master/Slave).
-                // Let's check text: "9. ... B. HDFS采用了主从结构模型... 正确答案：（AD）"??
-                // Wait, B describes "one NameNode and multiple DataNodes", which is HDFS 1.0 architecture. It is correct.
-                // Why did the answer key say AD? Maybe B has a detail wrong?
-                // "一个HDFS集群包括一个数据节点和若干个名称节点" -> This is BACKWARDS!
-                // It should be "One NameNode and multiple DataNodes".
-                // So B is False. C is False (DN sends heartbeats).
-                // So correct is A and D.
-                note: "B错在描述反了(应为1个NameNode和多个DataNode)；C错在心跳方向反了(应为DN发给NN)。"
-            },
-            {
-                id: 310, section: 'part3', type: 'multi',
-                q: "10. (多选) 关于Hadoop的描述正确的是（）",
-                options: ["A. 能够对大量数据进行分布式处理", "B. 采用分布式存储和处理两大核心技术", "C. 只支持Java编程语言", "D. 可运行在廉价计算机集群上"],
-                correct: [0, 1, 3],
-                note: "C错误，Hadoop支持多种语言 (Streaming API, Pipes)。"
-            },
-            // 单选 11-18
-            {
-                id: 311, section: 'part3', type: 'single',
-                q: "11. Flink成为流处理架构理想框架的关键原因不包括（）",
-                options: ["A. 仅支持实时流处理", "B. 批流一体化", "C. 高吞吐、低延迟", "D. 高度容错的状态管理"],
-                correct: [0],
-                note: "Flink 支持流处理和批处理 (批流一体)。"
-            },
-            {
-                id: 312, section: 'part3', type: 'single',
-                q: "12. 将数据对象划分到若干簇的技术是（）",
-                options: ["A. 分类", "B. 聚类", "C. 回归分析", "D. 关联规则"],
-                correct: [1]
-            },
-            {
-                id: 313, section: 'part3', type: 'single',
-                q: "13. Spark相比MapReduce的核心优势不包括（）",
-                options: ["A. 内存计算提升迭代效率", "B. 基于DAG的任务调度", "C. 仅支持Map和Reduce操作", "D. 编程模型更灵活"],
-                correct: [2],
-                note: "C是MapReduce的劣势，Spark支持丰富的算子。"
-            },
-            {
-                id: 314, section: 'part3', type: 'single',
-                q: "14. 流计算系统的核心特点不包括（）",
-                options: ["A. 低延迟", "B. 处理静态存储数据", "C. 高性能", "D. 分布式架构"],
-                correct: [1],
-                note: "流计算处理的是动态变化的流数据，而非静态数据。"
-            },
-            {
-                id: 315, section: 'part3', type: 'single',
-                q: "15. MapReduce的缺陷不包括（）",
-                options: ["A. 表达能力有限", "B. 延迟高", "C. 内存计算效率高", "D. 磁盘IO开销大"],
-                correct: [2],
-                note: "C是错的，MapReduce主要基于磁盘，内存效率不高。"
-            },
-            {
-                id: 316, section: 'part3', type: 'single',
-                q: "16. Spark生态系统中，用于图结构数据处理的组件是（）",
-                options: ["A. SparkSQL", "B. MLlib", "C. SparkStreaming", "D. GraphX"],
-                correct: [3]
-            },
-            {
-                id: 317, section: 'part3', type: 'single',
-                q: "17. 以下哪种场景最适合使用流计算（）",
-                options: ["A. 历史销售数据批量统计", "B. 用户实时浏览轨迹分析", "C. 离线数据挖掘", "D. 年度报表"],
-                correct: [1]
-            },
-            {
-                id: 318, section: 'part3', type: 'single',
-                q: "18. 流处理系统与传统数据处理系统的区别不包括（）",
-                options: ["A. 处理数据类型", "B. 结果时效性", "C. 结果获取方式", "D. 数据存储位置"],
-                correct: [3],
-                note: "D不是核心区别，两者都可以存内存或磁盘，核心在于数据是静态还是动态。"
-            },
-            // 多选 19-20
-            {
-                id: 319, section: 'part3', type: 'multi',
-                q: "19. (多选) 协同过滤的类型包括（）",
-                options: ["A. 基于用户的协同过滤", "B. 基于物品的协同过滤", "C. 基于模型的协同过滤", "D. 基于规则的协同过滤"],
-                correct: [0, 1, 2], // ABC based on user text
-                note: "通常分为：基于内存(用户/物品) 和 基于模型。"
-            },
-            {
-                id: 320, section: 'part3', type: 'multi',
-                q: "20. (多选) Flink的优势主要有（）",
-                options: ["A. 高度灵活的流式窗口", "B. 良好的容错性", "C. 同时支持流处理和批处理", "D. 具有独立的内存管理"],
-                correct: [0, 1, 2, 3]
-            }
+            { id: 301, section: 'part3', type: 'single', q: "1. NoSQL数据库的主要优势不包括（）", options: ["A. 灵活的水平可扩展性", "B. 严格遵守ACID约束", "C. 支持海量数据存储", "D. 灵活的数据模型"], correct: [1] },
+            { id: 302, section: 'part3', type: 'single', q: "2. HDFS的主从结构中，负责管理文件系统命名空间的是？（）", options: ["A. DataNode", "B. Client", "C. NameNode", "D. Rack"], correct: [2] },
+            { id: 303, section: 'part3', type: 'single', q: "3. Hadoop组件中，提供类似于SQL查询语言的工具是（）", options: ["A. Hive", "B. Mahout", "C. Zookeeper", "D. Flume"], correct: [0] },
+            { id: 304, section: 'part3', type: 'single', q: "4. 下面哪个组件支持Hadoop与关系型数据库之间的数据交互？（）", options: ["A. Flume", "B. Pig", "C. Zookeeper", "D. Sqoop"], correct: [3] },
+            { id: 305, section: 'part3', type: 'single', q: "5. NoSQL数据库中，适合处理高度相互关联数据的是（）", options: ["A. 键值数据库", "B. 文档数据库", "C. 列族数据库", "D. 图数据库"], correct: [3] },
+            { id: 306, section: 'part3', type: 'single', q: "6. 云数据库的特性不包括（）", options: ["A. 动态可扩展", "B. 维护成本高", "C. 高可用性", "D. 易用性强"], correct: [1] },
+            { id: 307, section: 'part3', type: 'single', q: "7. NoSQL数据库中，扩展性好、适合频繁读写简单数据模型的是（）", options: ["A. 图数据库", "B. 文档数据库", "C. 列族数据库", "D. 键值数据库"], correct: [3] },
+            { id: 308, section: 'part3', type: 'multi', q: "8. (多选) Hadoop的核心特性包括（）", options: ["A. 高可靠性", "B. 高可扩展性", "C. 高容错性", "D. 成本低"], correct: [0, 1, 2, 3] },
+            { id: 309, section: 'part3', type: 'multi', q: "9. (多选) 下列说法中正确的是（）", options: ["A. GFS是分布式文件系统", "B. HDFS采用主从结构", "C. NameNode向DataNode发心跳", "D. HDFS是对GFS的开源实现"], correct: [0, 3] }, 
+            { id: 310, section: 'part3', type: 'multi', q: "10. (多选) 关于Hadoop的描述正确的是（）", options: ["A. 能够对大量数据进行分布式处理", "B. 采用分布式存储和处理两大核心技术", "C. 只支持Java编程语言", "D. 可运行在廉价计算机集群上"], correct: [0, 1, 3] },
+            { id: 311, section: 'part3', type: 'single', q: "11. Flink成为流处理架构理想框架的关键原因不包括（）", options: ["A. 仅支持实时流处理", "B. 批流一体化", "C. 高吞吐、低延迟", "D. 高度容错的状态管理"], correct: [0] },
+            { id: 312, section: 'part3', type: 'single', q: "12. 将数据对象划分到若干簇的技术是（）", options: ["A. 分类", "B. 聚类", "C. 回归分析", "D. 关联规则"], correct: [1] },
+            { id: 313, section: 'part3', type: 'single', q: "13. Spark相比MapReduce的核心优势不包括（）", options: ["A. 内存计算提升迭代效率", "B. 基于DAG的任务调度", "C. 仅支持Map和Reduce操作", "D. 编程模型更灵活"], correct: [2] },
+            { id: 314, section: 'part3', type: 'single', q: "14. 流计算系统的核心特点不包括（）", options: ["A. 低延迟", "B. 处理静态存储数据", "C. 高性能", "D. 分布式架构"], correct: [1] },
+            { id: 315, section: 'part3', type: 'single', q: "15. MapReduce的缺陷不包括（）", options: ["A. 表达能力有限", "B. 延迟高", "C. 内存计算效率高", "D. 磁盘IO开销大"], correct: [2] },
+            { id: 316, section: 'part3', type: 'single', q: "16. Spark生态系统中，用于图结构数据处理的组件是（）", options: ["A. SparkSQL", "B. MLlib", "C. SparkStreaming", "D. GraphX"], correct: [3] },
+            { id: 317, section: 'part3', type: 'single', q: "17. 以下哪种场景最适合使用流计算（）", options: ["A. 历史销售数据批量统计", "B. 用户实时浏览轨迹分析", "C. 离线数据挖掘", "D. 年度报表"], correct: [1] },
+            { id: 318, section: 'part3', type: 'single', q: "18. 流处理系统与传统数据处理系统的区别不包括（）", options: ["A. 处理数据类型", "B. 结果时效性", "C. 结果获取方式", "D. 数据存储位置"], correct: [3] },
+            { id: 319, section: 'part3', type: 'multi', q: "19. (多选) 协同过滤的类型包括（）", options: ["A. 基于用户的协同过滤", "B. 基于物品的协同过滤", "C. 基于模型的协同过滤", "D. 基于规则的协同过滤"], correct: [0, 1, 2] },
+            { id: 320, section: 'part3', type: 'multi', q: "20. (多选) Flink的优势主要有（）", options: ["A. 高度灵活的流式窗口", "B. 良好的容错性", "C. 同时支持流处理和批处理", "D. 具有独立的内存管理"], correct: [0, 1, 2, 3] }
         ];
 
-        const subjectiveData = [
-            {
-                title: "15. 传统的数据采集和大数据采集有什么不同之处？",
-                content: `
-                <div class="space-y-2 text-sm text-slate-700">
-                    <p>1. <strong>数据来源</strong>：传统来源单一（企业内部），量小；大数据来源广泛（互联网、IoT），量大。</p>
-                    <p>2. <strong>数据类型</strong>：传统单一（结构化）；大数据丰富（结构化+半结构化+非结构化）。</p>
-                    <p>3. <strong>数据存储</strong>：传统存关系库；大数据存分布式文件系统/NoSQL。</p>
-                </div>`
-            },
-            {
-                title: "16. 简述大数据、云计算和物联网之间的联系。",
-                content: `
-                <div class="space-y-2 text-sm text-slate-700">
-                    <p>1. <strong>物联网</strong>：大数据的来源。</p>
-                    <p>2. <strong>大数据</strong>：为云计算提供用武之地，为物联网提供分析支撑。</p>
-                    <p>3. <strong>云计算</strong>：为大数据和物联网提供存储和计算的基础设施。</p>
-                </div>`
-            }
-        ];
-
-        // === App Logic ===
-        let currentSection = 'part1';
-        let filteredQuestions = [];
+        // === 逻辑控制 ===
+        let state = { answers: {}, submitted: {}, section: 'part1' };
+        let currentQuestions = [];
         let currentIndex = 0;
-        let userAnswers = {}; 
-        let score = 0;
 
-        window.onload = () => {
-            setSection('part1');
-        };
+        function init() {
+            const saved = localStorage.getItem('bd_quiz_state_v2');
+            if (saved) state = JSON.parse(saved);
+            if (!['part1','part2','part3','subjective'].includes(state.section)) state.section = 'part1';
+            switchSection(state.section, false);
+        }
 
-        function setSection(section) {
-            currentSection = section;
-            
-            // UI Tab Update
+        function saveData() {
+            localStorage.setItem('bd_quiz_state_v2', JSON.stringify(state));
+            updateScore();
+        }
+
+        function switchSection(section, autoJump = true) {
+            state.section = section;
+            saveData();
+
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white', 'active', 'shadow-md', 'bg-purple-600');
-                btn.classList.add('bg-white', 'text-slate-600', 'border');
-            });
-            
-            const activeBtn = Array.from(document.querySelectorAll('.tab-btn'))
-                .find(b => b.getAttribute('onclick').includes(section));
-            
-            if(activeBtn) {
-                activeBtn.classList.remove('bg-white', 'text-slate-600', 'border');
-                if (section === 'subjective') {
-                    activeBtn.classList.add('bg-purple-600', 'text-white', 'active', 'shadow-md');
+                if (btn.id === `tab-${section}`) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.remove('bg-white', 'text-slate-600', 'border');
                 } else {
-                    activeBtn.classList.add('bg-blue-600', 'text-white', 'active', 'shadow-md');
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.add('bg-white', 'text-slate-600', 'border');
                 }
-            }
+            });
 
-            // View Toggle
             const qCard = document.getElementById('quizCard');
             const sCard = document.getElementById('subjectiveCard');
             const footer = document.getElementById('footerControl');
@@ -527,124 +261,118 @@
                 footer.classList.remove('hidden');
                 sCard.classList.add('hidden');
                 
-                // Logic Reset
-                filteredQuestions = questions.filter(q => q.section === section);
-                currentIndex = 0;
-                userAnswers = {};
-                score = 0;
-                document.getElementById('scoreText').innerText = 0;
-                document.getElementById('progressBar').style.width = '0%';
-                
-                if (filteredQuestions.length > 0) renderQuestion();
+                currentQuestions = allQuestions.filter(q => q.section === section);
+                if (autoJump) {
+                    const firstUnfinished = currentQuestions.findIndex(q => !state.submitted[q.id]);
+                    currentIndex = firstUnfinished >= 0 ? firstUnfinished : 0;
+                } else {
+                    if (currentIndex >= currentQuestions.length) currentIndex = 0;
+                }
+                renderQuestion();
             }
         }
 
         function renderQuestion() {
-            const q = filteredQuestions[currentIndex];
-            const isAnswered = userAnswers[q.id] !== undefined;
+            if (currentQuestions.length === 0) return;
+            const q = currentQuestions[currentIndex];
+            const isSub = state.submitted[q.id];
+            const userSel = state.answers[q.id] || [];
 
-            // Header Info
             document.getElementById('qTypeBadge').innerText = q.type === 'single' ? '单选题' : '多选题';
-            document.getElementById('qTypeBadge').className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase ${q.type === 'single' ? 'badge-single' : 'badge-multi'}`;
-            document.getElementById('qIndex').innerText = `${currentIndex + 1} / ${filteredQuestions.length}`;
+            document.getElementById('qIndex').innerText = `${currentIndex + 1} / ${currentQuestions.length}`;
             document.getElementById('qText').innerText = q.q;
+            document.getElementById('gridBtnText').innerText = `${currentIndex + 1} / ${currentQuestions.length}`;
+            document.getElementById('progressBar').style.width = `${((currentIndex + 1) / currentQuestions.length) * 100}%`;
 
-            // Progress
-            document.getElementById('progressBar').style.width = `${((currentIndex) / filteredQuestions.length) * 100}%`;
-
-            // Options
             const optsArea = document.getElementById('optionsArea');
             optsArea.innerHTML = '';
             
             q.options.forEach((opt, idx) => {
                 const btn = document.createElement('button');
-                btn.className = "option-btn w-full text-left p-4 rounded-lg bg-white border border-slate-200 text-sm font-medium hover:border-blue-300 relative shadow-sm";
-                btn.innerText = opt;
+                btn.className = "option-btn w-full text-left p-4 rounded-xl text-sm font-medium text-slate-700 relative shadow-sm flex justify-between items-center";
                 
-                if (isAnswered) {
+                let icon = "";
+                if (isSub) {
                     btn.disabled = true;
-                    if (q.correct.includes(idx)) btn.classList.add('correct-bg');
-                    else if (userAnswers[q.id].includes(idx)) btn.classList.add('wrong-bg');
+                    if (q.correct.includes(idx)) {
+                        btn.classList.add('correct');
+                        icon = "✅";
+                    } else if (userSel.includes(idx) && !q.correct.includes(idx)) {
+                        btn.classList.add('wrong');
+                        icon = "❌";
+                    } else if (userSel.includes(idx) && q.correct.includes(idx)) {
+                        // User correct selection
+                        btn.classList.add('correct');
+                        icon = "✅";
+                    }
                 } else {
-                    if (userAnswers[q.id] && userAnswers[q.id].includes(idx)) btn.classList.add('selected-bg');
+                    if (userSel.includes(idx)) {
+                        btn.classList.add('selected');
+                        icon = "●";
+                    }
                     btn.onclick = () => handleSelect(idx);
                 }
+                
+                btn.innerHTML = `<span>${opt}</span><span class="text-lg">${icon}</span>`;
                 optsArea.appendChild(btn);
             });
 
-            // Buttons
-            const nextBtn = document.getElementById('nextBtn');
-            const submitBtn = document.getElementById('submitBtn');
-            const prevBtn = document.getElementById('prevBtn');
+            const multiBtn = document.getElementById('multiSubmitBtn');
             const feedbackArea = document.getElementById('feedbackArea');
 
-            prevBtn.disabled = currentIndex === 0;
-            feedbackArea.classList.add('hidden');
-
-            if (isAnswered) {
-                showFeedback(q);
-                submitBtn.classList.add('hidden');
-                nextBtn.classList.remove('hidden');
+            if (isSub) {
+                feedbackArea.classList.remove('hidden');
+                const isCorrect = JSON.stringify(userSel.sort()) === JSON.stringify(q.correct.sort());
+                document.getElementById('feedbackTitle').innerHTML = isCorrect ? `<span class="text-green-600">🎉 回答正确</span>` : `<span class="text-red-600">😢 回答错误</span>`;
+                document.getElementById('feedbackContent').innerText = q.note || "暂无详细解析";
+                multiBtn.classList.add('hidden');
             } else {
+                feedbackArea.classList.add('hidden');
                 if (q.type === 'multi') {
-                    submitBtn.classList.remove('hidden');
-                    nextBtn.classList.add('hidden');
+                    multiBtn.classList.remove('hidden');
+                    multiBtn.disabled = userSel.length === 0;
+                    multiBtn.className = userSel.length === 0 ? "flex-1 py-3 bg-slate-300 text-white font-bold rounded-lg cursor-not-allowed" : "flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition";
                 } else {
-                    submitBtn.classList.add('hidden');
-                    nextBtn.classList.add('hidden'); // Single choice auto-advance logic if desired, but here we wait for click
+                    multiBtn.classList.add('hidden');
                 }
             }
         }
 
         function handleSelect(idx) {
-            const q = filteredQuestions[currentIndex];
+            const q = currentQuestions[currentIndex];
+            let sel = state.answers[q.id] || [];
+
             if (q.type === 'single') {
-                userAnswers[q.id] = [idx];
-                checkAnswer();
+                state.answers[q.id] = [idx];
+                submitQuestion(q.id); 
             } else {
-                if (!userAnswers[q.id]) userAnswers[q.id] = [];
-                const i = userAnswers[q.id].indexOf(idx);
-                if (i > -1) userAnswers[q.id].splice(i, 1);
-                else userAnswers[q.id].push(idx);
-                renderQuestion(); // Re-render to show selection
+                const i = sel.indexOf(idx);
+                if (i > -1) sel.splice(i, 1);
+                else sel.push(idx);
+                state.answers[q.id] = sel;
+                saveData();
+                renderQuestion();
             }
         }
 
-        function checkAnswer() {
-            const q = filteredQuestions[currentIndex];
-            const ans = userAnswers[q.id];
-            
-            if (!ans || ans.length === 0) return alert("请选择答案");
+        function submitMulti() {
+            const q = currentQuestions[currentIndex];
+            if ((state.answers[q.id] || []).length === 0) return;
+            submitQuestion(q.id);
+        }
 
-            // Scoring (Strict)
-            const isCorrect = JSON.stringify(ans.sort()) === JSON.stringify(q.correct.sort());
-            if (isCorrect) {
-                score += (q.type === 'multi' ? 2 : 1);
-                document.getElementById('scoreText').innerText = score;
-            }
-            
+        function submitQuestion(qId) {
+            state.submitted[qId] = true;
+            saveData();
             renderQuestion();
         }
 
-        function showFeedback(q) {
-            const area = document.getElementById('feedbackArea');
-            const title = document.getElementById('feedbackTitle');
-            const content = document.getElementById('feedbackContent');
-            
-            area.classList.remove('hidden');
-            const ans = userAnswers[q.id];
-            const isCorrect = JSON.stringify(ans.sort()) === JSON.stringify(q.correct.sort());
-            
-            title.innerHTML = isCorrect ? "<span class='text-green-600'>回答正确</span>" : "<span class='text-red-600'>回答错误</span>";
-            content.innerText = q.note ? `解析：${q.note}` : "暂无解析";
-        }
-
         function nextQ() {
-            if (currentIndex < filteredQuestions.length - 1) {
+            if (currentIndex < currentQuestions.length - 1) {
                 currentIndex++;
                 renderQuestion();
             } else {
-                alert("本章题目已完成！");
+                alert("🎉 本章题目已刷完！");
             }
         }
 
@@ -655,25 +383,70 @@
             }
         }
 
-        function renderSubjective() {
-            const container = document.getElementById('subjectiveCard');
-            container.innerHTML = '';
-            subjectiveData.forEach(item => {
-                container.innerHTML += `
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="p-4 bg-purple-50 border-b border-purple-100 flex justify-between items-center cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                            <h3 class="font-bold text-purple-900 text-sm">${item.title}</h3>
-                            <span class="text-purple-400 text-xs">查看答案 ▼</span>
-                        </div>
-                        <div class="hidden p-5 bg-white">
-                            ${item.content}
-                        </div>
-                    </div>
-                `;
+        function updateScore() {
+            let correctCount = 0;
+            allQuestions.forEach(q => {
+                if (state.submitted[q.id]) {
+                    const userAns = (state.answers[q.id] || []).sort().toString();
+                    const correctAns = q.correct.sort().toString();
+                    if (userAns === correctAns) correctCount++;
+                }
+            });
+            document.getElementById('scoreText').innerText = correctCount;
+        }
+
+        function toggleGrid() {
+            const modal = document.getElementById('gridModal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                renderGrid();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('gridContent');
+            grid.innerHTML = '';
+            currentQuestions.forEach((q, idx) => {
+                const btn = document.createElement('button');
+                const isSub = state.submitted[q.id];
+                let cls = "grid-btn ";
+                if (idx === currentIndex) cls += "grid-current ";
+                
+                if (isSub) {
+                    const userAns = (state.answers[q.id] || []).sort().toString();
+                    const correctAns = q.correct.sort().toString();
+                    cls += (userAns === correctAns) ? "grid-correct" : "grid-wrong";
+                }
+                
+                btn.className = cls;
+                btn.innerText = idx + 1;
+                btn.onclick = () => { currentIndex = idx; renderQuestion(); toggleGrid(); };
+                grid.appendChild(btn);
             });
         }
 
+        function renderSubjective() {
+            const container = document.getElementById('subjectiveCard');
+            container.innerHTML = '';
+            const data = [
+                { title: "15. 传统采集 vs 大数据采集", content: "1. 来源：单一(企业) vs 广泛(互联网/IoT)<br>2. 类型：结构化 vs 结构+非结构<br>3. 存储：数据库 vs 分布式系统" },
+                { title: "16. 物联网、大数据、云计算关系", content: "物联网=来源，大数据=大脑(挖掘)，云计算=躯干(支撑)。" }
+            ];
+            data.forEach(item => {
+                container.innerHTML += `<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5"><h3 class="font-bold text-purple-900 mb-2">${item.title}</h3><div class="text-sm text-slate-700">${item.content}</div></div>`;
+            });
+        }
+
+        function resetProgress() {
+            if(confirm("确定要清空所有记录吗？")) {
+                localStorage.removeItem('bd_quiz_state_v2');
+                location.reload();
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>
-
