@@ -1,0 +1,17 @@
+{
+  "name": "计算机组成原理复习刷题",
+  "short_name": "组成原理刷题",
+  "description": "计算机组成原理选择题刷题应用：27 组 408 题，离线可用，进度自动保存",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#eef1f7",
+  "theme_color": "#4a6cf7",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
